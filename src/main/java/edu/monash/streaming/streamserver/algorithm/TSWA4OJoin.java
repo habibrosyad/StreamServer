@@ -53,8 +53,9 @@ public class TSWA4OJoin implements Join {
                         break;
                     }
 
+
                     // Windowing
-                    if (newTuple.getTimestamp()-checkpoint >= T) {
+                    if (newTuple.getTimestamp() - checkpoint >= T) {
                         windowing(newTuple);
                         checkpoint = newTuple.getTimestamp();
                     }
@@ -99,7 +100,7 @@ public class TSWA4OJoin implements Join {
         stopwatch.start();
 
         // Increase statistic
-        service.getStatistic().get(StatisticType.INPUT).increment();
+        service.getStatistic().getCounter(StatisticType.INPUT).increment();
 
         // Insert s to Lk
         List<List<Tuple>> L = new ArrayList<>();
@@ -111,10 +112,10 @@ public class TSWA4OJoin implements Join {
         for (String stream: receiver.getStreams()) {
             // For each Si (1 ≤ i ≤ m, i != k)
             if (!stream.equals(newTuple.getOrigin())) {
-                // Li ←Hi.get(v)
+                // Li ←Hi.getCounter(v)
                 List<Tuple> Li = tables.get(stream).get(newTuple.getKey());
                 // Increase statistic
-                service.getStatistic().get(StatisticType.PROBE).increment();
+                service.getStatistic().getCounter(StatisticType.PROBE).increment();
                 // If Li is empty, go to Step 1.4
                 if (Li == null || Li.size() == 0) {
                     hasMatches = false;
@@ -127,7 +128,7 @@ public class TSWA4OJoin implements Join {
         // Output a Cartesian product of all List
         if (hasMatches) {
             List<List<Tuple>> output = Joiner.product(L);
-            service.getStatistic().get(StatisticType.OUTPUT).add(output.size());
+            service.getStatistic().getCounter(StatisticType.OUTPUT).add(output.size());
         }
 
         // Add s to Hk
@@ -135,8 +136,11 @@ public class TSWA4OJoin implements Join {
         tuples.add(newTuple);
         tables.get(newTuple.getOrigin()).put(newTuple.getKey(), tuples);
 
-        service.getStatistic().get(StatisticType.JOIN).increment();
-        service.getStatistic().get(StatisticType.JOIN_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.JOIN).increment();
+        service.getStatistic().getCounter(StatisticType.JOIN_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MAX).accumulate(elapsed);
     }
 
     private void windowing(Tuple newTuple) {
@@ -156,7 +160,7 @@ public class TSWA4OJoin implements Join {
 
                     if (newTuple.getTimestamp()-W+T > tuple.getTimestamp()) {
                         tupleIterator.remove();
-                        service.getStatistic().get(StatisticType.REMOVE).increment();
+                        service.getStatistic().getCounter(StatisticType.REMOVE).increment();
                     } else {
                         break;
                     }
@@ -170,7 +174,10 @@ public class TSWA4OJoin implements Join {
         }
 
         // Increase statistic
-        service.getStatistic().get(StatisticType.WINDOWING).increment();
-        service.getStatistic().get(StatisticType.WINDOWING_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.WINDOWING).increment();
+        service.getStatistic().getCounter(StatisticType.WINDOWING_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MAX).accumulate(elapsed);
     }
 }

@@ -5,7 +5,7 @@ import org.apache.commons.cli.*;
 
 public class StreamServer {
     /**
-     * java -jar StreamServer.jar -p 9999 -a mjoin -s rstream.txt:sstream.txt:tstream.txt:uStream.txt -W 10 -T 1 -Te 1 -t 60 -sn 10
+     * java -jar StreamServer.jar -p 9999 -a mjoin -s rstream.txt:sstream.txt:tstream.txt:uStream.txt -W 10 -T 1 -Te 1 -t 60
      * @param args
      */
     public static void main(String[] args) {

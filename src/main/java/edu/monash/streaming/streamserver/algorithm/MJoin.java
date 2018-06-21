@@ -95,7 +95,7 @@ public class MJoin implements Join {
                     }
 
                     // Increase statistic
-                    service.getStatistic().get(StatisticType.INPUT).increment();
+                    service.getStatistic().getCounter(StatisticType.INPUT).increment();
 
                     // Do the join logic
                     synchronized (tables) {
@@ -144,7 +144,7 @@ public class MJoin implements Join {
                     for (Tuple tuple: removed) {
                         List<Tuple> matches = tables.get(stream).get(tuple.getKey());
                         while (matches.remove(tuple)) {
-                            service.getStatistic().get(StatisticType.REMOVE).increment();
+                            service.getStatistic().getCounter(StatisticType.REMOVE).increment();
                         }
 
                         if (matches.isEmpty()) {
@@ -154,8 +154,11 @@ public class MJoin implements Join {
                 }
             }
             // Increase statistic
-            service.getStatistic().get(StatisticType.WINDOWING).increment();
-            service.getStatistic().get(StatisticType.WINDOWING_TIME).add(stopwatch.elapsed());
+            long elapsed = stopwatch.elapsed();
+            service.getStatistic().getCounter(StatisticType.WINDOWING).increment();
+            service.getStatistic().getCounter(StatisticType.WINDOWING_TIME).add(elapsed);
+            service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MIN).accumulate(elapsed);
+            service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MAX).accumulate(elapsed);
         }
 
         private void joining(Tuple newTuple) {
@@ -172,7 +175,7 @@ public class MJoin implements Join {
             for (String stream: receiver.getStreams()) {
                 if (!stream.equals(origin)) {
                     // Increase statistic
-                    service.getStatistic().get(StatisticType.PROBE).increment();
+                    service.getStatistic().getCounter(StatisticType.PROBE).increment();
 
                     // Probe the hashTable of this stream
                     if (!tables.get(stream).containsKey(newTuple.getKey())) {
@@ -187,7 +190,7 @@ public class MJoin implements Join {
             if (hasMatches) {
                 // Output the result
                 // System.out.println(output.toString());
-                service.getStatistic().get(StatisticType.OUTPUT).add(output.size());
+                service.getStatistic().getCounter(StatisticType.OUTPUT).add(output.size());
             }
 
             // Add tuple to the window
@@ -198,8 +201,11 @@ public class MJoin implements Join {
             tuples.add(newTuple);
             tables.get(origin).put(newTuple.getKey(), tuples);
 
-            service.getStatistic().get(StatisticType.JOIN).increment();
-            service.getStatistic().get(StatisticType.JOIN_TIME).add(stopwatch.elapsed());
+            long elapsed = stopwatch.elapsed();
+            service.getStatistic().getCounter(StatisticType.JOIN).increment();
+            service.getStatistic().getCounter(StatisticType.JOIN_TIME).add(elapsed);
+            service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MIN).accumulate(elapsed);
+            service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MAX).accumulate(elapsed);
         }
     }
 }

@@ -56,7 +56,7 @@ public class TSWA4MJoin implements Join {
                     // Windowing
                     if (newTuple.getTimestamp() > lastBid * T) {
                         windowing(newTuple);
-                        lastBid = newTuple.getTimestamp()/T;
+                        lastBid = newTuple.getTimestamp() / T;
                     }
 
                     // Joining
@@ -103,7 +103,7 @@ public class TSWA4MJoin implements Join {
         long tau = newTuple.getTimestamp()/T;
 
         // Increase statistic
-        service.getStatistic().get(StatisticType.INPUT).increment();
+        service.getStatistic().getCounter(StatisticType.INPUT).increment();
 
         // Insert s to Lk
         List<List<Tuple>> L = new ArrayList<>();
@@ -122,9 +122,9 @@ public class TSWA4MJoin implements Join {
 
                 for (Map<String, List<Tuple>> subTable: subTables.values()) {
                     // Increase statistic
-                    service.getStatistic().get(StatisticType.PROBE).increment();
+                    service.getStatistic().getCounter(StatisticType.PROBE).increment();
 
-                    // Li .add(Hji.get(v))
+                    // Li .add(Hji.getCounter(v))
                     if (subTable.containsKey(newTuple.getKey())) Li.addAll(subTable.get(newTuple.getKey()));
                 }
 
@@ -140,7 +140,7 @@ public class TSWA4MJoin implements Join {
         // Output a Cartesian product of all List
         if (hasMatches) {
             List<List<Tuple>> output = Joiner.product(L);
-            service.getStatistic().get(StatisticType.OUTPUT).add(output.size());
+            service.getStatistic().getCounter(StatisticType.OUTPUT).add(output.size());
         }
 
         // If Hτk does not exist, create it
@@ -153,8 +153,11 @@ public class TSWA4MJoin implements Join {
         tuples.add(newTuple);
         tables.get(newTuple.getOrigin()).get(tau).put(newTuple.getKey(), tuples);
 
-        service.getStatistic().get(StatisticType.JOIN).increment();
-        service.getStatistic().get(StatisticType.JOIN_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.JOIN).increment();
+        service.getStatistic().getCounter(StatisticType.JOIN_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MAX).accumulate(elapsed);
     }
 
     private void windowing(Tuple newTuple) {
@@ -170,14 +173,17 @@ public class TSWA4MJoin implements Join {
             while (it.hasNext()) {
                 long key = it.next();
                 if (key > tau-n && key <= tau-n+1) {
-                    tables.get(stream).remove(key);
-                    service.getStatistic().get(StatisticType.REMOVE).increment();
+                    it.remove();
+                    service.getStatistic().getCounter(StatisticType.REMOVE).increment();
                 }
             }
         }
 
         // Increase statistic
-        service.getStatistic().get(StatisticType.WINDOWING).increment();
-        service.getStatistic().get(StatisticType.WINDOWING_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.WINDOWING).increment();
+        service.getStatistic().getCounter(StatisticType.WINDOWING_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MAX).accumulate(elapsed);
     }
 }

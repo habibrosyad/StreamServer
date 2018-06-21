@@ -83,7 +83,7 @@ public class Joiner {
             result.add(new ArrayList<T>());// then add empty list and return
             return result;
         } else {
-            List<T> head = input.get(0);//get the first list as a head
+            List<T> head = input.get(0);//getCounter the first list as a head
             List<List<T>> tail= product(input.subList(1, input.size()));//recursion to calculate a tail list
             for (T h : head) {//we merge every head element with every tail list.
                 for (List<T> t : tail) {

@@ -56,17 +56,18 @@ public class TSWA6Join implements Join {
                 counter.increment();
 
                 if (lastExecution != null && !lastExecution.isDone()) {
-                    service.getStatistic().get(StatisticType.MISS).increment();
+                    service.getStatistic().getCounter(StatisticType.MISS).increment();
                     return;
                 }
 
                 lastExecution = executor.submit(() -> {
                     long now = System.currentTimeMillis();
 
+
                     joining(now);
 
                     // If T second expire
-                    if (counter.sum()%(T/1000) == 0) {
+                    if (counter.sum() % (T / 1000) == 0) {
                         windowing(now);
                     }
                 });
@@ -92,7 +93,7 @@ public class TSWA6Join implements Join {
                     if (newTuple.getTimestamp() > now-Te && newTuple.getTimestamp() <= now) {
 
                         // Increase statistic
-                        service.getStatistic().get(StatisticType.INPUT).increment();
+                        service.getStatistic().getCounter(StatisticType.INPUT).increment();
 
                         // 1.1 v←f(s), clear all Lis, and insert s to Lk
                         List<List<Tuple>> L = new ArrayList<>();
@@ -111,9 +112,9 @@ public class TSWA6Join implements Join {
 
                                 for (Map<String, List<Tuple>> subTable : subTables.values()) {
                                     // Increase statistic
-                                    service.getStatistic().get(StatisticType.PROBE).increment();
+                                    service.getStatistic().getCounter(StatisticType.PROBE).increment();
 
-                                    // 1.2.1.1 Li .add(Hji.get(v))
+                                    // 1.2.1.1 Li .add(Hji.getCounter(v))
                                     if (subTable.containsKey(newTuple.getKey()))
                                         Li.addAll(subTable.get(newTuple.getKey()));
                                 }
@@ -130,7 +131,7 @@ public class TSWA6Join implements Join {
                         // 1.3. Output a Cartesian product of all List
                         if (hasMatches) {
                             List<List<Tuple>> output = Joiner.product(L);
-                            service.getStatistic().get(StatisticType.OUTPUT).add(output.size());
+                            service.getStatistic().getCounter(StatisticType.OUTPUT).add(output.size());
                         }
 
                         // 1.4. If Hτk does not exist, create it
@@ -159,8 +160,11 @@ public class TSWA6Join implements Join {
             }
         }
 
-        service.getStatistic().get(StatisticType.JOIN).increment();
-        service.getStatistic().get(StatisticType.JOIN_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.JOIN).increment();
+        service.getStatistic().getCounter(StatisticType.JOIN_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.JOIN_TIME_MAX).accumulate(elapsed);
     }
 
     private void windowing(long now) {
@@ -177,13 +181,16 @@ public class TSWA6Join implements Join {
                 long key = it.next();
                 if (key > tau-n && key <= tau-n+1) {
                     it.remove();
-                    service.getStatistic().get(StatisticType.REMOVE).increment();
+                    service.getStatistic().getCounter(StatisticType.REMOVE).increment();
                 }
             }
         }
 
         // Increase statistic
-        service.getStatistic().get(StatisticType.WINDOWING).increment();
-        service.getStatistic().get(StatisticType.WINDOWING_TIME).add(stopwatch.elapsed());
+        long elapsed = stopwatch.elapsed();
+        service.getStatistic().getCounter(StatisticType.WINDOWING).increment();
+        service.getStatistic().getCounter(StatisticType.WINDOWING_TIME).add(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MIN).accumulate(elapsed);
+        service.getStatistic().getMinMax(StatisticType.WINDOWING_TIME_MAX).accumulate(elapsed);
     }
 }
