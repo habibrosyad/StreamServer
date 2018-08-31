@@ -1,9 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="StreamServer:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/StreamServer_jar</output-path>
-    <root id="archive" name="StreamServer.jar">
-      <element id="module-output" name="StreamServer" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-cli/commons-cli/1.4/commons-cli-1.4.jar" path-in-jar="/" />
-    </root>
-  </artifact>
-</component>
